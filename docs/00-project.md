@@ -59,3 +59,127 @@ Exchange — учебная платформа спотовой торговли
 | Андрей Самохвалов | Frontend и DevOps | веб-интерфейс, контейнеризация, CI |
 
 Документация, требования и тесты ведутся всей командой.
+
+## 2. Журнал запуска
+
+Проект не является форком, поэтому журнал фиксирует проблемы, возникшие при сборке и запуске собственного скелета (20.10.2026). Нерешённых проблем нет; открытые вопросы по проекту оформлены как issues [#2–#6](https://github.com/pi-exchange/exchange/issues).
+
+| № | Симптом | Причина | Решение |
+|---|---|---|---|
+| 1 | `docker compose` и `docker version`: `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine` | Docker Desktop установлен, но не запущен | Запустить Docker Desktop и дождаться готовности движка. В README среди требований указано, что Docker должен быть запущен |
+| 2 | `dotnet`: `An XML comment cannot contain '--'` в `Directory.Build.props` | В XML-комментарии был текст `--locked-mode` | Комментарий переписан без двойного дефиса |
+| 3 | `GET /api/v1/markets/BTC/USDT/orderbook` отвечал `500`; в логе `The LINQ expression ... could not be translated` | EF Core не транслирует в SQL `GroupBy` с проекцией сразу в конструктор `record` | Агрегация по цене выполняется в БД через анонимный тип, преобразование в `BookLevel` идёт в памяти. Проверено на данных: уровни суммируются как `Quantity - FilledQuantity`, исполненные и отменённые ордера исключены |
+| 4 | `smoke.ps1`: `expected 2 markets, got 1` при том, что API отдаёт два | Windows PowerShell 5.1 возвращает JSON-массив из `Invoke-RestMethod` одним объектом, и `@(Invoke-RestMethod ...)` оборачивает его ещё раз | Результат сначала присваивается переменной, затем оборачивается в `@()` |
+| 5 | Кириллица в сообщениях `smoke.ps1` выводится искажённо | Windows PowerShell 5.1 читает `.ps1` без BOM в кодировке ANSI | Сообщения скрипта сделаны английскими. Скрипт `smoke.sh` остаётся русскоязычным: bash читает UTF-8 |
+| 6 | Шаг 3 проверки падал на непустой БД | Скрипт требовал пустой стакан, что неверно, как только появятся ордера | Проверяется структура ответа (рынок и списки `bids` и `asks`), а не пустота |
+
+## 3. Структура проекта
+
+### Каталоги и модули
+
+```
+Exchange.sln                    решение .NET
+global.json                     версия SDK
+dotnet-tools.json               локальные инструменты (dotnet-ef)
+Directory.Build.props           общие свойства сборки (net10.0, nullable, lock-файлы)
+docker-compose.yml              сервисы db (PostgreSQL) и api
+.env.example                    параметры compose
+src/Exchange.Api/
+  Program.cs                    точка входа, конфигурация, применение миграций, маршруты
+  Domain/Entities.cs            сущности и перечисления предметной области
+  Data/ExchangeDbContext.cs     модель EF Core, индексы, сид активов
+  Data/Migrations/              миграции БД
+  appsettings.json              строка подключения, список рынков
+  Dockerfile                    многоступенчатая сборка образа
+scripts/smoke.sh, smoke.ps1     проверка работоспособности
+docs/, tests/                   документация, тесты (заготовки)
+```
+
+### Точки входа
+
+- Приложение: `src/Exchange.Api/Program.cs` (ASP.NET Core minimal API, в контейнере слушает порт 8080).
+- Запуск окружения: `docker compose up -d --build`.
+- Проверка: `scripts/smoke.sh` или `scripts/smoke.ps1`.
+
+### Внешние зависимости и сервисы
+
+| Сервис | Назначение | Как поднимается |
+|---|---|---|
+| PostgreSQL 17.11 | Единственное хранилище данных | Сервис `db` в `docker-compose.yml`, healthcheck `pg_isready`; `api` стартует после готовности БД |
+
+Очередей сообщений, внешних API и блокчейн-узлов нет: ввод и вывод в семестре эмулируются.
+
+### Хранение данных
+
+- PostgreSQL, доступ через EF Core (Npgsql). Данные лежат в томе Docker `pgdata`.
+- Схема создаётся миграциями (`Data/Migrations`), которые приложение применяет при старте; если БД ещё не готова, делается до 10 попыток с паузой 2 с.
+- Суммы и цены хранятся как `numeric(38,18)` (вопрос о выборе типа: [#2](https://github.com/pi-exchange/exchange/issues/2)).
+- Список рынков (`BTC/USDT`, `ETH/USDT`) пока задаётся в конфигурации, а не в БД.
+
+### Сущности
+
+| Сущность | Ключевые поля | Связи |
+|---|---|---|
+| User | Id, Email (уникален), PasswordHash, Role (Trader/Administrator), CreatedAt | — |
+| Asset | Id, Symbol (уникален), Name, Decimals; сид: BTC, ETH, USDT | — |
+| Balance | UserId, AssetId, Available, Locked; пара (UserId, AssetId) уникальна | User, Asset |
+| Order | Id, UserId, Market, Side, Type, Price (для рыночных null), Quantity, FilledQuantity, Status, CreatedAt | User |
+| Trade | Id, Market, BuyOrderId, SellOrderId, Price, Quantity, ExecutedAt | Order (две связи) |
+
+### Конфигурация
+
+| Параметр | Где задаётся | По умолчанию |
+|---|---|---|
+| `ConnectionStrings:Default` | `appsettings.json`; в compose переопределяется переменной окружения `ConnectionStrings__Default` | `Host=localhost;...` для локального запуска, `Host=db;...` в compose |
+| `Markets` | `appsettings.json` | `BTC/USDT`, `ETH/USDT` |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `API_PORT` | `.env` (шаблон `.env.example`) | `exchange`, `exchange`, `exchange`, `8080` |
+
+Значения по умолчанию подходят только для разработки: пароль БД в `.env.example` учебный.
+
+### Действующие HTTP-маршруты скелета
+
+| Маршрут | Назначение |
+|---|---|
+| `GET /health` | Состояние сервиса и БД; `503`, если БД недоступна |
+| `GET /api/v1/markets` | Список рынков |
+| `GET /api/v1/markets/{base}/{quote}/orderbook` | Агрегированный стакан; `404` для неизвестного рынка |
+
+## 4. Карта функций
+
+Функции и роли предварительные и окончательно фиксируются в ЛР2. Идентификаторы требований (UR/FR) вводятся с ЛР2, поэтому здесь используется порядковый номер. Названия модулей и файлов в строках со статусом «планируется» — проектное намерение, а не существующий код.
+
+| № | Функция | Роль | Модуль или файл | Статус | Проверка вручную |
+|---|---|---|---|---|---|
+| 1 | Регистрация и вход | Trader | `Endpoints/Auth` (план), сущность `User` | планируется | Зарегистрироваться, войти, получить токен; повторная регистрация с тем же email отклоняется |
+| 2 | Просмотр балансов | Trader | `Endpoints/Balances` (план), сущность `Balance` | планируется | Запросить балансы: по каждому активу видны свободная и заблокированная суммы |
+| 3 | Пополнение (эмуляция) | Trader | `Endpoints/Transfers` (план) | планируется | Создать пополнение, подтвердить его, увидеть рост свободного баланса; повтор запроса не зачисляет средства дважды ([#4](https://github.com/pi-exchange/exchange/issues/4)) |
+| 4 | Выставление лимитного и рыночного ордера | Trader | `Matching/` (план), сущности `Order`, `Trade` | планируется | Выставить встречные ордера, увидеть сделку, изменение балансов и статусов ордеров |
+| 5 | Отмена ордера | Trader | `Endpoints/Orders` (план) | планируется | Отменить открытый ордер, увидеть возврат заблокированных средств и исчезновение из стакана |
+| 6 | Просмотр стакана | Trader | `Program.cs`, маршрут `orderbook` | частично: чтение стакана из БД работает, данных пока нет | `GET /api/v1/markets/BTC/USDT/orderbook` возвращает списки `bids` и `asks`; сверить суммы по уровням с таблицей `Orders` |
+| 7 | История сделок | Trader | `Endpoints/Trades` (план), сущность `Trade` | планируется | После сделки увидеть её в списке своих сделок с ценой и количеством |
+| 8 | Вывод средств (эмуляция) | Trader | `Endpoints/Transfers` (план) | планируется | Создать вывод: сумма блокируется, затем списывается; сумма больше доступной отклоняется |
+| 9 | Управление активами и рынками | Administrator | `Program.cs` (рынки читаются из `appsettings.json`), сущность `Asset` | частично: рынки задаются конфигурацией, управления нет | `GET /api/v1/markets` возвращает настроенные рынки; добавление и отключение рынков планируется |
+
+## 5. Состояние практик
+
+| Практика | Есть? | Комментарий |
+|---|---|---|
+| Автоматические тесты | Нет | Каталог `tests/` пуст. Запланированы в ЛР5; первый тест matching-движка нужен раньше ([#5](https://github.com/pi-exchange/exchange/issues/5)) |
+| Линтер и форматирование | Нет | Есть только `TreatWarningsAsErrors` при сборке. `dotnet format` и анализаторы не подключены ([#5](https://github.com/pi-exchange/exchange/issues/5)) |
+| Непрерывная интеграция | Нет | Конфигурации CI нет ([#5](https://github.com/pi-exchange/exchange/issues/5)) |
+| Документация | Есть | README, этот паспорт; требования, архитектура и остальное — ЛР2–ЛР6 |
+| Журнал изменений | Есть | `CHANGELOG.md` в формате Keep a Changelog |
+| Фиксация зависимостей | Есть | `global.json`, `dotnet-tools.json`, `packages.lock.json`, точные теги образов |
+| Воспроизводимый запуск | Есть | `docker compose up -d --build` и `scripts/smoke.*`, порядок проверки в README |
+| Защита основной ветки | Есть | В `main` нельзя коммитить напрямую, только через pull request |
+| Архитектурные решения (ADR) | Нет | Каталог `docs/adr` пуст; первые ADR по деньгам, стакану и авторизации — в ЛР3 ([#2](https://github.com/pi-exchange/exchange/issues/2), [#3](https://github.com/pi-exchange/exchange/issues/3), [#6](https://github.com/pi-exchange/exchange/issues/6)) |
+
+### Первые наблюдения
+
+Оформлены как issues с меткой `question`:
+
+- [#2](https://github.com/pi-exchange/exchange/issues/2): тип и точность денежных значений;
+- [#3](https://github.com/pi-exchange/exchange/issues/3): где хранится состояние стакана и как оно согласуется с БД;
+- [#4](https://github.com/pi-exchange/exchange/issues/4): модель эмуляции ввода и вывода, идемпотентность;
+- [#5](https://github.com/pi-exchange/exchange/issues/5): отсутствие тестов, линтера и CI;
+- [#6](https://github.com/pi-exchange/exchange/issues/6): стек фронтенда и способ авторизации.

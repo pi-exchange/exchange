@@ -17,7 +17,7 @@
 ### Предварительные требования
 
 - Git;
-- Docker с Compose v2 (Docker Desktop или Docker Engine) — единственное, что нужно для запуска;
+- Docker с Compose v2 (Docker Desktop или Docker Engine), **запущенный** — единственное, что нужно для запуска;
 - для проверки: bash и curl (Linux, macOS, Git Bash) либо Windows PowerShell 5.1+.
 
 Порт `8080` должен быть свободен. Чтобы сменить порт или параметры БД, скопируйте `.env.example` в `.env` и отредактируйте.
