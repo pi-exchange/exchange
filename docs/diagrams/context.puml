@@ -1,0 +1,30 @@
+@startuml
+title Контекст Pi Exchange · FR-1–FR-10
+left to right direction
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam componentStyle rectangle
+actor "Гость" as Guest
+actor "Пользователь /\nпоставщик ликвидности" as User
+actor "Оператор стенда" as Operator
+rectangle "Pi Exchange\nReact, API, Matching, Custody\nPostgreSQL: auth / exchange / custody" as Exchange #E9F3EC
+cloud "Bybit\nсправочные цены" as Bybit
+cloud "Локальная Ethereum RPC\nтестовые токены" as Chain
+component "Внешний клиент API\nнапример taker-bot" as Bot
+cloud "Почтовая служба\n<<план FR-10>>" as Mail #FFF1CC
+Guest --> Exchange : рынок / регистрация / вход\nFR-1, FR-2, FR-10 (план)
+User --> Exchange : счета / торговля / ликвидность\nFR-3–FR-9 (FR-9 — план)
+Operator --> Exchange : запуск и штатное\nтестовое пополнение
+Bot --> Exchange : подписанный публичный API
+Exchange --> Bybit : запрос справочных цен
+Exchange --> Chain : чтение блоков;\nпередача транзакций
+Exchange ..> Mail : ссылка восстановления (план)
+note bottom of Exchange
+  Прямоугольник — граница приложения.
+  Ethereum и клиенты вне границы.
+  Биржевые заявки исполняются внутри Pi Exchange;
+  на Bybit торговые команды не отправляются.
+end note
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+title Состояния спотовой заявки · FR-5–FR-6 / US-5–US-6
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+state "Open\nисполнений ещё нет" as Open
+state "PartiallyFilled\nисполнена часть" as Partial
+state "Filled\nRemaining = 0" as Filled
+state "Cancelled\nостаток отменён; Reserved = 0" as Cancelled
+[*] --> Open : принята в обработку
+Open --> Partial : исполнена часть
+Open --> Filled : исполнено всё количество
+Partial --> Partial : следующее частичное исполнение
+Partial --> Filled : исполнен остаток
+Open --> Cancelled : отмена пользователем / самоторговля
+Partial --> Cancelled : отмена пользователем / самоторговля /\nнеисполненный рыночный остаток
+Filled --> [*]
+Cancelled --> [*]
+note bottom of Open
+  Open при создании может быть промежуточным
+  состоянием внутри одной транзакции.
+  Лимитный неисполненный остаток остаётся активным.
+end note
+note bottom of Cancelled
+  Исполненная часть и её комиссии сохраняются.
+  Market без встречной ликвидности отклоняется до
+  сохранения Order; состояния Rejected в модели нет.
+  Ошибка до COMMIT откатывает всю команду.
+end note
+@enduml
