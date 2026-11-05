@@ -6,6 +6,8 @@ The educational copy was mirrored once from upstream commit c29c46ab33c303b4c31a
 
 Verification: `python scripts/check-lab2.py` and `python scripts/check-contract.py` passed; all seven diagrams rendered locally with PlantUML 1.2026.9 and were visually inspected. The lab does not claim a new backend integration run or a running Docker stack. Actual teammate comments and approvals are required before merging or tagging; they are not replaced by generated author identities. Publication state and participant handoff are recorded locally in the untracked `LAB2-HANDOFF.md`.
 
+Review follow-up (Fedoroff05, PR #1): added separate buyer/BuyerId and seller/SellerId associations between User and Trade. User-side multiplicity is 0..1 to account for service actors without auth.Users rows; the UUID fields themselves remain required. Updated section 4.1 and regenerated/visually checked the data-model PNG. Both lab documentation and public-contract checks passed. No application or schema changes.
+
 The remaining sections below describe the inherited upstream implementation history, not new deployment work in pi-exchange.
 
 Branch: `master`. Existing `novcic` Compose project is preserved; expanded stack is `novcic-next` on port 8081 with a separate database and chain.

@@ -53,6 +53,8 @@ class "Сделка (Trade)\nexchange.Trades" as Trade {
 }
 User "1" -- "0..*" Wallet : обычный владелец
 User "1" -- "0..*" Order : обычный владелец
+User "0..1" -- "0..*" Trade : покупатель / BuyerId
+User "0..1" -- "0..*" Trade : продавец / SellerId
 Instrument "1" -- "0..*" Order
 Instrument "1" -- "0..*" Trade
 Order "1" -- "0..*" Trade : maker / MakerOrderId
@@ -65,7 +67,9 @@ legend bottom
   Показаны основные атрибуты, не полный DDL.
   Связи логические: физических FK в текущей модели нет.
   Служебные AMM/escrow могут иметь UserId без auth.Users.
-  PK — первичный ключ; ? — nullable. Связи BuyerId/SellerId
-  с обычными пользователями представлены атрибутами Trade.
+  BuyerId и SellerId обязательны, но соответствующий User может
+  отсутствовать у служебного актора: кратность со стороны User — 0..1.
+  Один User может участвовать в 0..* сделках в каждой роли.
+  PK — первичный ключ; ? — nullable.
 endlegend
 @enduml
