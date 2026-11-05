@@ -8,6 +8,8 @@ Verification: `python scripts/check-lab2.py` and `python scripts/check-contract.
 
 Review follow-up (Fedoroff05, PR #1): added separate buyer/BuyerId and seller/SellerId associations between User and Trade. User-side multiplicity is 0..1 to account for service actors without auth.Users rows; the UUID fields themselves remain required. Updated section 4.1 and regenerated/visually checked the data-model PNG. Both lab documentation and public-contract checks passed. No application or schema changes.
 
+Review follow-up (Dronicsam, PR #1): expanded US-8 with a partial-conversion cancellation example grounded in LiquidityFundingCancellationReturnsConvertedAssetsToFunding. A 1000-USDT contribution that buys 0.005 BTC for 250 USDT returns 750 USDT plus 0.005 BTC. Documented that the existing request row retains submitted amounts; actual refunds appear in Funding balances and balance activity. Both documentation and contract checks passed. Runtime code and diagrams are unchanged.
+
 The remaining sections below describe the inherited upstream implementation history, not new deployment work in pi-exchange.
 
 Branch: `master`. Existing `novcic` Compose project is preserved; expanded stack is `novcic-next` on port 8081 with a separate database and chain.
