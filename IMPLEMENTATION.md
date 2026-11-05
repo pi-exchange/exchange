@@ -1,5 +1,17 @@
 # Expanded platform implementation
 
+## Laboratory 2 documentation in pi-exchange — 2026-11-05
+
+The educational copy was mirrored once from upstream commit c29c46ab33c303b4c31a6bc0e22dfb5221274d63. Its `master` remains the baseline; laboratory changes use `lab-2` and target `main`. Added version 1.0 requirements (10 FR, 5 NFR), 10 traceable scenarios, three concrete success/error examples, seven PlantUML/PNG model pairs, README status table, CHANGELOG and a documentation CI check. CSV export and email recovery are explicitly planned, not implemented. Runtime sources, the public contract and database migrations remain unchanged.
+
+Verification: `python scripts/check-lab2.py` and `python scripts/check-contract.py` passed; all seven diagrams rendered locally with PlantUML 1.2026.9 and were visually inspected. The lab does not claim a new backend integration run or a running Docker stack. Actual teammate comments and approvals are required before merging or tagging; they are not replaced by generated author identities. Publication state and participant handoff are recorded locally in the untracked `LAB2-HANDOFF.md`.
+
+Review follow-up (Fedoroff05, PR #1): added separate buyer/BuyerId and seller/SellerId associations between User and Trade. User-side multiplicity is 0..1 to account for service actors without auth.Users rows; the UUID fields themselves remain required. Updated section 4.1 and regenerated/visually checked the data-model PNG. Both lab documentation and public-contract checks passed. No application or schema changes.
+
+Review follow-up (Dronicsam, PR #1): expanded US-8 with a partial-conversion cancellation example grounded in LiquidityFundingCancellationReturnsConvertedAssetsToFunding. A 1000-USDT contribution that buys 0.005 BTC for 250 USDT returns 750 USDT plus 0.005 BTC. Documented that the existing request row retains submitted amounts; actual refunds appear in Funding balances and balance activity. Both documentation and contract checks passed. Runtime code and diagrams are unchanged.
+
+The remaining sections below describe the inherited upstream implementation history, not new deployment work in pi-exchange.
+
 Branch: `master`. Existing `novcic` Compose project is preserved; expanded stack is `novcic-next` on port 8081 with a separate database and chain.
 
 ## Acceptance matrix

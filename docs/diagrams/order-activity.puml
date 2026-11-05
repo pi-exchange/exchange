@@ -1,0 +1,50 @@
+@startuml
+title Спотовая заявка · FR-5 / US-5 / NFR-4
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+start
+:Пользователь выбирает BTCUSDT, сторону,\nтип, количество и цену для Limit;
+:API проверяет авторизацию;\nMatching получает команду и ключ UUID;
+if (Авторизация и ключ допустимы?) then (нет)
+  :401 или 400; денежные данные не изменены;
+  stop
+endif
+:BEGIN; общая advisory-блокировка;\nпоиск Receipts по пользователю и ключу;
+if (Команда уже известна?) then (да)
+  if (Тело и операция совпадают?) then (да)
+    :Вернуть сохранённый результат;
+  else (нет)
+    :400 — ключ относится к другому запросу;
+  endif
+  stop
+endif
+:Проверить поля; подобрать встречные заявки\nпо приоритету цены и Sequence;
+if (Поля неверны или Market без ликвидности?) then (да)
+  :Откат; 400; заявка не сохранена;
+  stop
+endif
+if (Средств для резерва достаточно?) then (нет)
+  :Откат; 400; частичного списания нет;
+  stop
+endif
+:Создать Order; переместить средства\nAvailable → Locked; записать учёт;
+:Исполнить доступную встречную часть;\nсоздать Trades, расчёты и комиссии;
+if (Остаток нулевой?) then (да)
+  :Состояние Filled;
+else (нет)
+  if (Market или предотвращена самоторговля?) then (да)
+    :Cancelled; освободить остаток резерва;
+  else (нет)
+    :Open или PartiallyFilled;\nостаток остаётся в стакане;
+  endif
+endif
+:Сформировать ответ и Receipts; SaveChanges;\nпроверить риск при наличии экспозиции;
+if (Риск допустим?) then (нет)
+  :ROLLBACK всей команды;\n400, без сохранённых исполнений и проводок;
+  stop
+endif
+:Увеличить Revision; COMMIT;\n200 с результатом заявки;
+stop
+@enduml

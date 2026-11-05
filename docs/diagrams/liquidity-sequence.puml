@@ -1,0 +1,43 @@
+@startuml
+title Очередь взноса и ошибка · FR-8 / US-8 / NFR-4
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam shadowing false
+autonumber
+actor "Поставщик ликвидности" as User
+participant "React / API-клиент" as Web
+participant "API" as Api
+participant "Matching / TradingService" as Matching
+database "PostgreSQL" as Db
+User -> Web : Источник Funding; суммы BTC и USDT
+Web -> Api : POST /api/liquidity-deposit\nJWT, UUID ключа, sourceAccount, btc, usdt
+Api -> Api : Проверить авторизацию; UserId из sub
+Api -> Matching : POST /liquidity-deposit/{UserId}\nвнутренний ключ + исходная команда
+Matching -> Db : BEGIN; advisory lock; проверить Receipts;\nобеспечить кошельки пользователя
+note over Matching,Db
+  Показана новая команда (ключ ещё не встречался).
+end note
+alt btc=0, usdt=0
+  Matching -> Matching : QueueLiquidity: сумма не положительна\nRuleException
+  Matching -> Db : ROLLBACK при выходе из Command
+  Matching --> Api : 400: error="Enter a positive contribution in either asset."
+  Api --> Web : 400 с тем же error
+  Web --> User : Сообщение об ошибке
+  note over Matching,Db
+    Funding остаётся 500, Unified Trading — 100.
+    Нет операции, списаний и успешной квитанции.
+  end note
+else btc=0, usdt=100
+  Matching -> Matching : Проверить источник и точность суммы
+  Matching -> Db : Обеспечить escrow; Funding −100; escrow +100;\nLedger, Journal, LiquidityOperation(Pending)
+  Matching -> Db : Receipts(Response); Revision++; COMMIT
+  Matching --> Api : 200: Pending, sourceAccount=Funding, shares=0
+  Api --> Web : 200 с операцией
+  Web --> User : Взнос ожидает обработки; Funding=400
+end
+note over User,Web
+  Нулевой ввод форма может остановить раньше.
+  Серверная ошибочная ветвь проверяется прямым API-запросом.
+end note
+@enduml

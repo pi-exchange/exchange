@@ -1,0 +1,39 @@
+@startuml
+title Варианты использования · FR-1–FR-10
+left to right direction
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+actor "Гость" as Guest
+actor "Пользователь" as User
+actor "Поставщик ликвидности" as LP
+User <|-- LP
+rectangle "Pi Exchange" {
+  usecase "FR-1\nРегистрация и вход" as UC1
+  usecase "FR-2\nНаблюдение рынка" as UC2
+  usecase "FR-3\nПросмотр остатков" as UC3
+  usecase "FR-4\nПеревод между счетами" as UC4
+  usecase "FR-5\nРазмещение заявки" as UC5
+  usecase "FR-6\nОтмена остатка заявки" as UC6
+  usecase "FR-7\nИстория движений" as UC7
+  usecase "FR-8\nВзнос ликвидности /\nотмена ожидающего взноса" as UC8
+  usecase "FR-9\nЭкспорт сделок в CSV\n<<план>>" as UC9 #FFF1CC
+  usecase "FR-10\nВосстановление доступа\n<<план>>" as UC10 #FFF1CC
+}
+Guest --> UC1
+Guest --> UC2
+Guest --> UC10
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC9
+LP --> UC8
+note bottom of LP
+  Сценарная роль пользователя;
+  отдельного разрешения LP в БД нет.
+end note
+@enduml

@@ -1,0 +1,75 @@
+@startuml
+title Модель данных: пять сущностей · FR-1–FR-6 / US-1–US-6
+left to right direction
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam shadowing false
+hide circle
+hide methods
+class "Пользователь (User)\nauth.Users" as User {
+  Id : uuid <<PK>>
+  Email : text <<unique>>
+  NormalizedUsername : text <<unique>>
+  PasswordHash : text
+  Country : text
+  CreatedAt : timestamptz
+}
+class "Кошелёк (Wallet)\nexchange.Wallets" as Wallet {
+  UserId : uuid <<PK part>>
+  Kind : text <<PK part>>
+  Asset : text <<PK part>>
+  {field} Available : numeric(28,8)
+  {field} Locked : numeric(28,8)
+}
+class "Инструмент (Instrument)\nexchange.Instruments" as Instrument {
+  Id : text <<PK>>
+  Kind : text
+  Expiry : timestamptz?
+  {field} Strike : numeric(28,8)?
+  OptionSide : text?
+  Status : text
+}
+class "Заявка (Order)\nexchange.Orders" as Order {
+  Id : uuid <<PK>>
+  UserId : uuid
+  InstrumentId : text
+  Sequence : bigint <<identity>>
+  Side, Type, Status : text
+  {field} Price : numeric(28,8)?
+  {field} Quantity, Remaining : numeric(28,8)
+  {field} Reserved : numeric(28,8)
+  CancelReason : text?
+}
+class "Сделка (Trade)\nexchange.Trades" as Trade {
+  Id : uuid <<PK>>
+  InstrumentId : text
+  MakerOrderId, TakerOrderId : uuid
+  BuyerId, SellerId : uuid
+  Sequence : bigint <<identity>>
+  {field} Price, Quantity : numeric(28,8)
+  {field} BuyerFee, SellerFee : numeric(28,8)?
+  CreatedAt : timestamptz
+}
+User "1" -- "0..*" Wallet : обычный владелец
+User "1" -- "0..*" Order : обычный владелец
+User "0..1" -- "0..*" Trade : покупатель / BuyerId
+User "0..1" -- "0..*" Trade : продавец / SellerId
+Instrument "1" -- "0..*" Order
+Instrument "1" -- "0..*" Trade
+Order "1" -- "0..*" Trade : maker / MakerOrderId
+Order "1" -- "0..*" Trade : taker / TakerOrderId
+note bottom of Wallet
+  CHECK Available >= 0 AND Locked >= 0.
+  Составной PK: (UserId, Kind, Asset).
+end note
+legend bottom
+  Показаны основные атрибуты, не полный DDL.
+  Связи логические: физических FK в текущей модели нет.
+  Служебные AMM/escrow могут иметь UserId без auth.Users.
+  BuyerId и SellerId обязательны, но соответствующий User может
+  отсутствовать у служебного актора: кратность со стороны User — 0..1.
+  Один User может участвовать в 0..* сделках в каждой роли.
+  PK — первичный ключ; ? — nullable.
+endlegend
+@enduml

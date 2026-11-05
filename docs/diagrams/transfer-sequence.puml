@@ -1,0 +1,39 @@
+@startuml
+title Перевод Funding → Unified Trading · FR-4 / US-4 / NFR-4
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam shadowing false
+autonumber
+actor "Пользователь" as User
+participant "React" as Web
+participant "API" as Api
+participant "Matching / TradingService" as Matching
+database "PostgreSQL" as Db
+User -> Web : USDT, Funding → Unified Trading, 25
+Web -> Api : POST /api/transfer\nJWT + Idempotency-Key + тело
+Api -> Api : Проверить сессию; UserId из sub
+Api -> Matching : POST /transfer/{UserId}\nX-Internal-Key + прежний ключ и тело
+Matching -> Db : BEGIN; pg_advisory_xact_lock;\nSELECT Receipts(UserId, Key)
+alt Тот же ключ и тот же fingerprint уже сохранены
+  Db --> Matching : Исходный Response
+  Matching -> Db : COMMIT без повторного движения
+else Новая команда
+  Matching -> Db : Загрузить / обеспечить кошельки пользователя
+  Matching -> Matching : Проверить актив, направление, сумму
+  Matching -> Db : Funding −25; Unified Trading +25;\nLedger и встречные Journal
+  note over Matching,Db
+    Исходно: 500 / 100 USDT; после: 475 / 125.
+    Позиции и долги отсутствуют.
+    При пополнении Unified Trading финальный CheckRisk пропускается.
+  end note
+  Matching -> Db : Сохранить изменения и Receipts(Response);\nRevision++; COMMIT
+end
+Matching --> Api : 200: reference, "Transfer completed."
+Api --> Web : Тот же JSON и статус
+Web --> User : Успех; обновлённые остатки
+note over Web,Matching
+  Тот же ключ с другим телом отклоняется (400).
+  При неизвестном исходе повторяется прежняя команда.
+end note
+@enduml

@@ -1,10 +1,37 @@
-# Novčić Exchange
+# Pi Exchange — учебный проект
+
+Однократная копия [Novčić Exchange](https://github.com/novcic/novcic-exchange) на основе коммита `c29c46ab33c303b4c31a6bc0e22dfb5221274d63`. История сохранена в `master`; основная ветка этой копии — `main`, лабораторная № 2 готовится в `lab-2`.
+
+Документ версии 1.0: [описание проекта и требования](docs/01-requirements.md). Модели: [исходники PlantUML и PNG](docs/diagrams/README.md). История документа: [CHANGELOG](CHANGELOG.md). Проверка: `python scripts/check-lab2.py`.
+
+Команда: Кушнаренко Н.В. (`kolya5544`, backend), Федоров Арсений (`Fedoroff05`, БД), Андрей Самохвалов (`Dronicsam`, frontend). Реальное участие фиксируется коммитами и ревью. Версия документа не означает завершённый PR: перед слиянием требуются содержательные комментарии и approve обоих ревьюеров.
+
+<!-- lab2-status:start -->
+## ?????? ??????????
+
+| ????? | ???????????? | ????????? | ????????? |
+| --- | --- | --- | --- |
+| FR-1 | Гость может зарегистрировать учётную запись и войти в неё. | обязательно в этом семестре | уже есть |
+| FR-2 | Гость может просматривать стакан и последние сделки выбранного инструмента. | обязательно в этом семестре | уже есть |
+| FR-3 | Пользователь может просматривать доступные и заблокированные остатки своих активов на обоих счетах. | обязательно в этом семестре | уже есть |
+| FR-4 | Пользователь может переводить доступные средства между своими счетами Funding и Unified Trading. | обязательно в этом семестре | уже есть |
+| FR-5 | Пользователь может размещать лимитные и рыночные заявки на покупку или продажу BTC за USDT. | обязательно в этом семестре | уже есть |
+| FR-6 | Пользователь может отменять неисполненный остаток своей активной заявки. | обязательно в этом семестре | уже есть |
+| FR-7 | Пользователь может просматривать последние движения средств по своим счетам. | обязательно в этом семестре | уже есть |
+| FR-8 | Поставщик ликвидности может вносить BTC и/или USDT из выбранного счёта в очередь пула и отменять ожидающий взнос. | обязательно в этом семестре | уже есть |
+| FR-9 | Пользователь может выгружать историю своих сделок за выбранный период в CSV. | желательно | нужно сделать |
+| FR-10 | Гость может восстановить доступ к своей учётной записи по ссылке из письма. | желательно | нужно сделать |
+<!-- lab2-status:end -->
+
+## Исходное приложение и запуск
 
 Digital-asset exchange with a React terminal, ASP.NET Core API, a separate matching authority and custody worker, PostgreSQL accounting, and a persistent local Ethereum network.
 
-This checkout now lives in `NovcicExchange/`. Run exchange commands from this directory. The sibling `../docs/` is an independent repository on `master`, published at [novcic.github.io/docs](https://novcic.github.io/docs/). Both repositories follow [BRANDING.md](BRANDING.md), the detailed Meadow design specification.
+This repository is the isolated educational copy `pi-exchange/exchange`. Run documentation checks from this repository's root. The [upstream API documentation](https://novcic.github.io/docs/) is a separate project and is not modified by this laboratory. The inherited interface follows [BRANDING.md](BRANDING.md).
 
-After public API or branding changes, run `python scripts/sync-docs.py` and `python scripts/check-contract.py`, then regenerate and validate the sibling docs. See `../docs/docs/maintenance.md` for the release workflow. Default derivative AMM depth is five levels per side, controlled by `Amm:DerivativeLevels` (1–20); the levels divide the existing collateral budget.
+Lab 2 changes documentation only. Use `python scripts/check-contract.py` to confirm the public contract stays unchanged; do not run the inherited sibling-document synchronization script against Novcic. Default derivative AMM depth is five levels per side, controlled by `Amm:DerivativeLevels` (1–20); the levels divide the existing collateral budget.
+
+**Isolation:** the runtime instructions below are inherited from upstream. Their Docker project names, volumes and ports are unchanged. Do not run setup, reset or deployment on a host containing the original Novcic stack; use a separate disposable environment for runtime acceptance. No runtime launch is needed for this documentation laboratory.
 
 ## Run the expanded exchange
 
