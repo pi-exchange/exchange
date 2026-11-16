@@ -1,5 +1,13 @@
 # Expanded platform implementation
 
+## Laboratory 4 transfer tests in pi-exchange — 2026-11-16
+
+Added three independent xUnit tests for `TradingService.Command` / `Transfer`: 25-USDT success with accounting and a receipt, 600-USDT rejection without persisted changes, and replay returning the same response without another debit. Each fixture provisions Funding=500 / Unified Trading=100 USDT and zero BTC/locked funds. The explicit TEST_DB connection must name exactly `pi_exchange_lab4_tests` before database reset. This exercises the real core and PostgreSQL; it does not exercise HTTP routing/authentication or claim HTTP status coverage. Runtime and schema code are unchanged.
+
+Local validation: .NET SDK 10.0.400, PostgreSQL 17 Alpine in a dedicated temporary container on a dynamically assigned loopback port. Restore succeeded (initial sandbox NuGet-audit access warnings cleared after a restore with network access); Release build succeeded; the filtered test run passed 3/3 with no skips. Both `check-lab2.py` and `check-contract.py` passed. Docker Hub timed out fetching `postgres:17`; the locally available `postgres:17-alpine` image was used instead, and the workflow uses the same image family. No existing application database was used.
+
+The new PR workflow restores, builds as the additional check, runs the transfer filter and uploads TRX results even on failure. The assignment's red/green demonstration temporarily changes the success test's expected Funding balance from 475 to 474, then restores 475 in a separate commit. Actions run links belong in the PR description; publication state and the pending real teammate reviews are tracked in local untracked `LAB4-HANDOFF.md`. Lab 3 must merge first, followed by main integration and successful current checks before lab 4 merge/tag.
+
 ## Laboratory 2 documentation in pi-exchange — 2026-11-05
 
 The educational copy was mirrored once from upstream commit c29c46ab33c303b4c31a6bc0e22dfb5221274d63. Its `master` remains the baseline; laboratory changes use `lab-2` and target `main`. Added version 1.0 requirements (10 FR, 5 NFR), 10 traceable scenarios, three concrete success/error examples, seven PlantUML/PNG model pairs, README status table, CHANGELOG and a documentation CI check. CSV export and email recovery are explicitly planned, not implemented. Runtime sources, the public contract and database migrations remain unchanged.

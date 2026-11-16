@@ -6,6 +6,54 @@
 
 Команда: Кушнаренко Н.В. (`kolya5544`, backend), Федоров Арсений (`Fedoroff05`, БД), Андрей Самохвалов (`Dronicsam`, frontend). Реальное участие фиксируется коммитами и ревью. Версия документа не означает завершённый PR: перед слиянием требуются содержательные комментарии и approve обоих ревьюеров.
 
+## Лабораторная № 4: автоматические проверки
+
+Тесты [TransferContractTests](tests/Novcic.Tests/TransferContractTests.cs) проверяют существующий модуль перевода по US-4 / FR-4 и примерам [контракта лабораторной № 3](https://github.com/pi-exchange/exchange/blob/lab-3/docs/interface-contract.md). Работы готовятся независимо; PR лабораторной № 4 следует сливать после лабораторной № 3.
+
+Проверяем `TradingService.Command` и `Transfer` с настоящей PostgreSQL: 25 USDT дают остатки 475/125; попытка перевести 600 USDT оставляет исходные 500/100 и не создаёт проводок; повтор успешной команды не списывает деньги второй раз. Это интеграционные тесты модуля, не HTTP-тесты: маршрутизация, Bearer-авторизация и HTTP-коды не проверяются. Каждый тест заново создаёт свою фикстуру, внешние сервисы рынка и блокчейна не вызываются.
+
+Нужны .NET SDK 10 (версия и roll-forward заданы в `global.json`) и запущенный Docker Desktop с Linux containers. Зависимости устанавливает `dotnet restore`; системную PostgreSQL устанавливать не требуется. Команды выполняются в PowerShell из корня этой копии репозитория.
+
+Создайте отдельный временный контейнер. Он не подключает существующие тома, выбирает свободный порт только на localhost, а его пароль используется исключительно для одноразовых тестовых данных:
+
+```powershell
+docker run --detach --name pi-exchange-lab4-tests --label pi-exchange.lab=4 --publish 127.0.0.1::5432 --env POSTGRES_USER=lab4 --env POSTGRES_PASSWORD=lab4-test-only --env POSTGRES_DB=pi_exchange_lab4_tests postgres:17-alpine
+if ($LASTEXITCODE -ne 0) { throw 'Test container was not created; inspect the Docker error before continuing.' }
+$dbReady = $false
+for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    docker exec pi-exchange-lab4-tests pg_isready -U lab4 -d pi_exchange_lab4_tests
+    if ($LASTEXITCODE -eq 0) { $dbReady = $true; break }
+    Start-Sleep -Seconds 1
+}
+if (-not $dbReady) { throw 'Test PostgreSQL did not become ready.' }
+$dbEndpoint = docker port pi-exchange-lab4-tests 5432/tcp
+if ($LASTEXITCODE -ne 0 -or $dbEndpoint -notmatch '^127\.0\.0\.1:(\d+)$') { throw 'Unexpected test database endpoint.' }
+$dbPort = $Matches[1]
+$env:TEST_DB = "Host=127.0.0.1;Port=$dbPort;Database=pi_exchange_lab4_tests;Username=lab4;Password=lab4-test-only"
+```
+
+Установка зависимостей, дополнительная проверка сборки и запуск трёх тестов:
+
+```powershell
+dotnet restore tests/Novcic.Tests/Novcic.Tests.csproj
+if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
+dotnet build tests/Novcic.Tests/Novcic.Tests.csproj --configuration Release --no-restore
+if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
+dotnet test tests/Novcic.Tests/Novcic.Tests.csproj --configuration Release --no-build --filter FullyQualifiedName~TransferContractTests --logger 'trx;LogFileName=transfer-contract.trx' --results-directory artifacts/lab4
+if ($LASTEXITCODE -ne 0) { throw 'Transfer tests failed; inspect artifacts/lab4/transfer-contract.trx.' }
+```
+
+Ожидается **3 passed, 0 failed, 0 skipped**. `TEST_DB` обязателен; перед пересозданием БД фикстура проверяет точное имя `pi_exchange_lab4_tests`. Используйте указанный фильтр: остальной унаследованный набор тестов не входит в эту лабораторную. Для повторного запуска тестов на том же контейнере достаточно последнего блока; новый `docker run` не нужен.
+
+После проверки удалите только созданный тестовый контейнер и его временные тома:
+
+```powershell
+docker rm --force --volumes pi-exchange-lab4-tests
+Remove-Item Env:TEST_DB -ErrorAction SilentlyContinue
+```
+
+[Workflow лабораторной № 4](.github/workflows/lab-4.yml) запускается при открытии PR в `main`, добавлении коммитов и повторном открытии. Он готовит .NET и отдельную PostgreSQL, восстанавливает зависимости, собирает проект и запускает те же три теста. Отчёт TRX сохраняется в артефакт `lab4-test-results`, в том числе при падении. Ссылки на намеренно красный и исправленный зелёный прогоны публикуются в описании PR; до успешного прогона и реальных ревью слияние не выполняется.
+
 <!-- lab2-status:start -->
 ## ?????? ??????????
 

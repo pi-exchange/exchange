@@ -2,9 +2,11 @@
 
 ## Educational copy: pi-exchange
 
-For laboratory work, use `lab-2` with PRs into `main`; retain mirrored `master` as the source baseline. All lab changes and GitHub operations belong exclusively to `pi-exchange/exchange`. Do not modify, synchronize, deploy, or push to the original Novcic repositories. The historical instructions below describe the upstream layout and do not authorize changes outside this copy. In particular, do not run the inherited setup/reset or sibling-doc synchronization commands against the original environment.
+For laboratory work, use the corresponding `lab-N` branch with PRs into `main`; retain mirrored `master` as the source baseline. All lab changes and GitHub operations belong exclusively to `pi-exchange/exchange`. Do not modify, synchronize, deploy, or push to the original Novcic repositories. The historical instructions below describe the upstream layout and do not authorize changes outside this copy. In particular, do not run the inherited setup/reset or sibling-doc synchronization commands against the original environment.
 
 Lab 2 is a documentation change: keep runtime code and the API contract intact. Validate with `python scripts/check-lab2.py` and `python scripts/check-contract.py`; regenerate and visually inspect PNGs after diagram edits. Keep `LAB2-HANDOFF.md` untracked via the local Git exclude file. Actual teammate reviews/approvals must come from their own accounts; merge and tag `lab-2` only after both reviews are complete.
+
+Lab 4 uses `lab-4` and tests the real transfer module with a dedicated PostgreSQL database named exactly `pi_exchange_lab4_tests`. Run only the `FullyQualifiedName~TransferContractTests` filter for this lab; never point its reset fixture at an existing application database. Preserve runtime code and generated API files. Demonstrate one deliberate assertion failure and its correction in separate commits on the same PR, with links to both Actions runs. Keep `LAB4-HANDOFF.md` untracked through the local Git exclude file. Obtain both teammates' real reviews/approvals, merge lab 3 first, integrate main, and merge/tag `lab-4` only with successful current checks.
 
 Use master. The exchange repository is NovcicExchange; ../docs is a separate public repository. Preserve Docker project names, database volumes and local chain state when changing workspace layout.
 
