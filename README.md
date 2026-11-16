@@ -1,8 +1,10 @@
 # Pi Exchange — учебный проект
 
-Однократная копия [Novčić Exchange](https://github.com/novcic/novcic-exchange) на основе коммита `c29c46ab33c303b4c31a6bc0e22dfb5221274d63`. История сохранена в `master`; основная ветка этой копии — `main`, лабораторная № 2 готовится в `lab-2`.
+Однократная копия [Novčić Exchange](https://github.com/novcic/novcic-exchange) на основе коммита `c29c46ab33c303b4c31a6bc0e22dfb5221274d63`. История сохранена в `master`; основная ветка этой копии — `main`. Лабораторная № 2 слита через [PR #1](https://github.com/pi-exchange/exchange/pull/1) и отмечена тегом `lab-2`; лабораторная № 3 готовится в `lab-3`.
 
 Документ версии 1.0: [описание проекта и требования](docs/01-requirements.md). Модели: [исходники PlantUML и PNG](docs/diagrams/README.md). История документа: [CHANGELOG](CHANGELOG.md). Проверка: `python scripts/check-lab2.py`.
+
+Лабораторная № 3: [контракт перевода между счетами](docs/interface-contract.md) — `POST /api/transfer`, US-4 / FR-4. Документ содержит параметры, условия вызова, успешный ответ, характерную ошибку и два примера HTTP / PowerShell. Он описывает существующую реализацию; проверка машинного API-контракта: `python scripts/check-contract.py`.
 
 Команда: Кушнаренко Н.В. (`kolya5544`, backend), Федоров Арсений (`Fedoroff05`, БД), Андрей Самохвалов (`Dronicsam`, frontend). Реальное участие фиксируется коммитами и ревью. Версия документа не означает завершённый PR: перед слиянием требуются содержательные комментарии и approve обоих ревьюеров.
 
