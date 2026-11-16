@@ -1,5 +1,13 @@
 # Expanded platform implementation
 
+## Laboratory 4 transfer tests in pi-exchange — 2026-11-16
+
+Added three independent xUnit tests for `TradingService.Command` / `Transfer`: 25-USDT success with accounting and a receipt, 600-USDT rejection without persisted changes, and replay returning the same response without another debit. Each fixture provisions Funding=500 / Unified Trading=100 USDT and zero BTC/locked funds. The explicit TEST_DB connection must name exactly `pi_exchange_lab4_tests` before database reset. This exercises the real core and PostgreSQL; it does not exercise HTTP routing/authentication or claim HTTP status coverage. Runtime and schema code are unchanged.
+
+Local validation: .NET SDK 10.0.400, PostgreSQL 17 Alpine in a dedicated temporary container on a dynamically assigned loopback port. Restore succeeded (initial sandbox NuGet-audit access warnings cleared after a restore with network access); Release build succeeded; the filtered test run passed 3/3 with no skips. Both `check-lab2.py` and `check-contract.py` passed. Docker Hub timed out fetching `postgres:17`; the locally available `postgres:17-alpine` image was used instead, and the workflow uses the same image family. No existing application database was used.
+
+The new PR workflow restores, builds as the additional check, runs the transfer filter and uploads TRX results even on failure. The assignment's red/green demonstration temporarily changed the success test's expected Funding balance from 475 to 474. [The red test run](https://github.com/pi-exchange/exchange/actions/runs/43883118718) passed restore/build, then failed only `Transfer25CommitsBalancesAndAccounting`: expected 474, actual 475.00000000; the other two tests passed. This follow-up restores 475 in a separate commit. The PR description records both run links; publication state and pending real teammate reviews are tracked in local untracked `LAB4-HANDOFF.md`. Lab 3 must merge first, followed by main integration and successful current checks before lab 4 merge/tag.
+
 ## Laboratory 3 interface contract in pi-exchange — 2026-11-16
 
 Added `docs/interface-contract.md` for the existing `POST /api/transfer` operation (US-4 / FR-4). It documents Bearer authentication, required headers and body, decimal constraints, cross-margin conditions, success and insufficient-funds responses, atomic accounting and idempotent retries. Independent success/error examples reuse the lab 2 initial balances and include raw HTTP and PowerShell commands. README links the contract; AGENTS.md now routes each laboratory to its own branch and records the lab 3 review gate. Runtime code, database schema and generated API files are unchanged.

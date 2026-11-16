@@ -1,0 +1,48 @@
+name: Lab 4 transfer tests
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  transfer-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: lab4
+          POSTGRES_PASSWORD: lab4-test-only
+          POSTGRES_DB: pi_exchange_lab4_tests
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U lab4 -d pi_exchange_lab4_tests"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore dependencies
+        run: dotnet restore tests/Novcic.Tests/Novcic.Tests.csproj
+      - name: Build test project and core
+        run: dotnet build tests/Novcic.Tests/Novcic.Tests.csproj --configuration Release --no-restore
+      - name: Run transfer contract tests
+        env:
+          TEST_DB: Host=127.0.0.1;Port=${{ job.services.postgres.ports[5432] }};Database=pi_exchange_lab4_tests;Username=lab4;Password=lab4-test-only
+        run: dotnet test tests/Novcic.Tests/Novcic.Tests.csproj --configuration Release --no-build --filter FullyQualifiedName~TransferContractTests --logger "trx;LogFileName=transfer-contract.trx" --results-directory artifacts/lab4
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab4-test-results
+          path: artifacts/lab4/*.trx
+          if-no-files-found: warn
