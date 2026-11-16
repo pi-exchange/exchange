@@ -66,8 +66,7 @@ public class TransferContractTests : IAsyncLifetime
         Assert.Equal("Transfer completed.", json.RootElement.GetProperty("message").GetString());
         var reference = json.RootElement.GetProperty("reference").GetGuid();
         Assert.NotEqual(Guid.Empty, reference);
-        // Deliberately wrong for the lab's first CI run; restore 475 in a separate commit.
-        await AssertBalances(474m, 125m);
+        await AssertBalances(475m, 125m);
 
         await using var db = Db();
         var entries = await db.Ledger.OrderBy(e => e.AvailableDelta).ToListAsync();
